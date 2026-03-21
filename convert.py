@@ -206,7 +206,6 @@ KNOWN_ABILITIES = {
     "Cradle of Filth":              "Melee attacks gain CRITICAL.",
     "Unending Horde":               "Does not count toward Maximum Field Strength.",
     "Unending Starvation":          "[Equipment] +1\" Move. Can target self with Ravenous Infection.",
-    "Gnashing and Tearing":         "Fight action: make 2 melee attacks (uses built-in weapons).",
     "Dormant Hunger":               "When would go OOA: go Dormant instead. Remove all INF MARKERs; replace with 60mm marker. Returns if INF placed on marker.",
     "Plague-Ridden Flesh":          "-2 INJ DICE on injury rolls (not vs FIRE).",
     "Knight Companion of the Feast":"Nearby friendly models: +1 DICE risky roll for Ravenous Infection if within 3\".",
@@ -223,11 +222,63 @@ KNOWN_ABILITIES = {
     "Corpulent":                    "-2 INJ DICE on all injury rolls targeting this model.",
     "Unstoppable":                  "≤32mm models cannot melee attack it on retreat. Can Move/Charge if only ≤32mm nearby.",
     "Grail Devotee":                "+1 INJ MOD per Devotee to melee attacks. Up to 2 per model.",
+    "Gnashing and Tearing":         "Fight ACTION: make 2 melee atk without weapon (+1 INJ DICE, CLEAVE 2; CLEAVE 3 on Charge).",
+    "Gluttonous Horde":             "Melee atk CRITICAL without weapon. +1 DICE per other friendly within 3\" (not self).",
+
+    # ── Great Hunger Strains ───────────────────────────────────────────────
+    "Devouring Jaws":               "[Strain] Devour ACTION: melee atk CRITICAL without weapon; if not OOA, place 1 BLOOD on self.",
+    "Grasping Maw":                 "[Strain] Grasp ACTION: risky; Success = pull enemy in LoS within 12\" up to 3\" toward self.",
+    "Hellfly Host":                 "[Strain] Replace Move with 6\"/Flying; lose Undead Fortitude.",
+    "Lockjaw Bite":                 "[Strain] Enemy retreating within 1\": place 1 INF MARKER before retreat attacks.",
+    "Papillal Hide":                "[Strain] No LoS required for Charge ACTION.",
+    "Rotten Cutters":               "[Strain] Melee attacks gain CLEAVE 2.",
+    "More Worm Than Man":           "Opponent cannot spend this model's INF MARKERS (except Bloodbath rolls).",
+    "Rapturous Feast":              "Friendly within 4\" of spellcaster: melee atk gain INFECTION MARKERS if charged this Activation.",
+
+    # ── Great Hunger Warband Special Rules ───────────────────────────────────
+    "Arcana Putrescere":            "Hag: up to 3 Powers. Lord of Tumours: 1. Gregori Gula: 1.",
+    "Butcher Knights":              "Plague Knights get Ravenous Infection free; use GH Plague Knight Ranks instead of standard ones.",
+    "Cradle Thralls":               "0-3 Ravenous-class Infiltrators; cost 2 blood; don't count toward Max Field Strength.",
+    "Desiccated Husks":             "0-2 Corpse Guard-class; melee gain CRITICAL; replace Bodyguard with More Worm Than Man.",
+    "Excruciating Hunger":          "Cannot have: Beelzebub's Axe, BG Shields, Bolt-action Rifles, Blunderbusses, Compound Eyes, Gas Grenades, Infested Rifles, Machine Guns, Musical Instruments, Muskets, Pistols, Troop Flags, Viscera Cannons.",
+    "Spawn of Gluttony":            "Must include 1 Matagot Hag or Lord of Tumours (not both). Cannot include Corpse Guard, Heralds, or Amalgam.",
+    "The Great Maw":                "If Warband roster value ≥1000D: may recruit 0-1 Great Maw (Lord of Tumours profile, no LEADER).",
+
+    # ── Great Hunger Turn Modes ────────────────────────────────────────────
+    "Agonised Churning":            "Each Turn (if within 8\" of Hag): remove 2 INF from friendly → place on enemy within 1\".",
+    "Ruinous Masticating":          "Each Turn: +1 INF on friendly within 8\" of Hag; opponent can't spend their INF for -DICE if ≥2.",
+    "Spasmodic Wretching":          "Each Turn: +1 INF on friendly within 8\" of Hag; -1 DICE ranged atk vs those with ≥2 INF.",
+    "Vile Craving":                 "Each Turn (if within 8\" of Hag): remove 2 INF → move up to half Move toward nearest enemy.",
+
+    # ── Great Hunger Equipment ────────────────────────────────────────────
+    "Foetid Palaquin":              "[Armour, -1 INJ MOD] Bile Clot ACTION: remove INF (friend/foe within 18\") → -1 INJ MOD/2 INF (max -3).",
+    "Cup of Filth":                 "[Equipment] Pre-game: pick 1 ELITE or up to 4 Ravenous; they gain +1 DICE Dash risky rolls.",
 
     # ── Court Warbands / Goetic Powers ────────────────────────────────────
-    "Infernal Iron Armour":         "[Armour] -2 INJ MOD, IMPERVIOUS.",
-    "Concentration Camp":           "Yoke Fiend with this: enemy model within 1\" cannot Retreat.",
+    "Concentration Camp":           "Yoke Fiend within 1\" of enemy: that enemy cannot Retreat.",
     "Perverse Desires":             "Court Ability: once per game, one non-DEMONIC model joins Warband as Deserter.",
+    "Hateful":                      "Must Charge nearest visible non-DEMONIC/BLACK GRAIL enemy within 12\" if >1\" from all enemies.",
+
+    # ── Heretic Legion Warband Variants ───────────────────────────────────
+    "Semi-corporeal":               "-1 INJ DICE for ranged atk injury rolls vs models in this Warband.",
+    "Barbed Wire Banshee":          "[Trench Ghosts] Can include Banshee instead of Chorister; replaces Unholy Hymns with +1 INJ MOD melee.",
+    "Enemies of All":               "Cannot include Mercenaries.",
+    "Lost Souls":                   "No ARTIFICIAL models; cannot have Hellbound Soul Contracts or Infernal Brands.",
+    "Slow and Creeping":            "Dash = 3\"/Infantry. -1 DICE attacking enemies that haven't moved this Turn.",
+    "Undead Horror":                "All Warband models gain FEAR, NEGATE DIFFICULT TERRAIN, NEGATE GAS.",
+
+    # ── Tank Palanquin (Heretic Priest upgrade) ───────────────────────────
+    "Death From On High":           "Tank Palanquin: +3\" to height for Elevated Position bonus checks.",
+    "Bulky":                        "Tank Palanquin: 50mm base, no Shield, Charge Bonus D3\" not D6\".",
+    "Standfast":                    "Down result on injury table treated as Minor Wound.",
+
+    # ── Trench Dogs (Mercenaries) ─────────────────────────────────────────
+    "Four Paws":                    "+1 DICE Climb/Jump/Fall/Dash risky rolls.",
+    "Pack Loyalty":                 "Shares its owner's Faction Keyword.",
+    "Dog Food":                     "[Equipment] Allows recruiting a Trench Dog from the Mercenaries section.",
+
+    # ── Black Grail profile names used as warband rules ───────────────────
+    "Special Rule: Morale":         "Enemy warbands roll Morale at -1 DICE. Court Warbands and Black Grail ignore this.",
 
     # ── Mercenaries / misc ────────────────────────────────────────────────
     "Inspiring Relic":              "Bearer doesn't end Activation after failed Risky Success Roll.",
