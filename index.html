@@ -1,0 +1,1502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trench Crusade → TTS Converter</title>
+<style>
+:root {
+  --bg:        #0e0e12;
+  --surface:   #16161d;
+  --surface2:  #1e1e28;
+  --border:    #2e2e3e;
+  --text:      #d4d4e0;
+  --muted:     #7070a0;
+  --gold:      #fde047;
+  --blue:      #89E1E3;
+  --orange:    #fa8231;
+  --purple:    #C966E5;
+  --grey:      #b2b7be;
+  --yellow:    #f7b731;
+  --teal:      #0fb9b1;
+  --green:     #20bf6b;
+  --red:       #eb3b5a;
+  --accent:    #c23a3a;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  font-size: 14px;
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 16px 24px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+header h1 {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+header .subtitle {
+  font-size: 12px;
+  color: var(--muted);
+}
+header .badge {
+  margin-left: auto;
+  font-size: 11px;
+  color: var(--muted);
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+
+/* ── Main layout ── */
+main {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* ── Drop zone ── */
+#drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 12px;
+  padding: 48px 24px;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s;
+  background: var(--surface);
+}
+#drop-zone:hover,
+#drop-zone.drag-over {
+  border-color: var(--gold);
+  background: #1c1c20;
+}
+#drop-zone .drop-icon {
+  font-size: 40px;
+  margin-bottom: 12px;
+  opacity: 0.6;
+}
+#drop-zone h2 {
+  font-size: 16px;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+#drop-zone p {
+  font-size: 12px;
+  color: var(--muted);
+}
+#file-input { display: none; }
+
+/* ── Options bar ── */
+#options-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.options-label {
+  font-size: 12px;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+.toggle-group {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+}
+.toggle-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.toggle-btn.active {
+  background: var(--surface2);
+  color: var(--gold);
+}
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 16px;
+  border-radius: 7px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+.btn:hover { background: var(--surface2); border-color: var(--gold); color: var(--gold); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { background: #d94040; border-color: #d94040; }
+.btn.success { background: #1a3d2a; border-color: var(--green); color: var(--green); }
+
+/* ── Roster header ── */
+#roster-header {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 16px 20px;
+}
+#roster-header .roster-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--gold);
+}
+#roster-header .roster-meta {
+  font-size: 13px;
+  color: var(--muted);
+  margin-top: 4px;
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+#roster-header .meta-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+.badge-ducats { background: #2a2310; color: var(--yellow); }
+.badge-glory  { background: #1d2a1a; color: var(--green); }
+.badge-faction { background: #1e1524; color: var(--purple); }
+
+/* ── Cards area ── */
+#cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.card-item {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.15s;
+}
+.card-item:hover { border-color: #3e3e52; }
+.card-item.sortable-ghost { opacity: 0.4; }
+.card-item.sortable-chosen { border-color: var(--gold); }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  cursor: pointer;
+  user-select: none;
+}
+.card-header:hover { background: var(--surface2); }
+.drag-handle {
+  color: var(--muted);
+  font-size: 16px;
+  cursor: grab;
+  padding: 0 2px;
+  flex-shrink: 0;
+}
+.drag-handle:active { cursor: grabbing; }
+.card-type-icon {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+.card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.card-cost {
+  font-size: 11px;
+  color: var(--muted);
+  flex-shrink: 0;
+}
+.card-expand-btn {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: color 0.15s;
+  flex-shrink: 0;
+}
+.card-expand-btn:hover { color: var(--text); }
+
+.card-copy-btn {
+  background: none;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 11px;
+  padding: 3px 9px;
+  border-radius: 5px;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+.card-copy-btn:hover { border-color: var(--teal); color: var(--teal); }
+.card-copy-btn.copied { border-color: var(--green); color: var(--green); }
+
+.card-body {
+  border-top: 1px solid var(--border);
+  padding: 12px 14px 14px;
+  display: none;
+}
+.card-body.open { display: block; }
+
+/* ── TTS preview ── */
+.tts-preview {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 12px;
+  line-height: 1.7;
+  white-space: pre-wrap;
+  word-break: break-word;
+  color: #c8c8d8;
+}
+.tts-preview .c-gold   { color: var(--gold); }
+.tts-preview .c-blue   { color: var(--blue); }
+.tts-preview .c-orange { color: var(--orange); }
+.tts-preview .c-purple { color: var(--purple); }
+.tts-preview .c-grey   { color: var(--grey); }
+.tts-preview .c-yellow { color: var(--yellow); }
+.tts-preview .c-teal   { color: var(--teal); }
+.tts-preview .c-green  { color: var(--green); }
+.tts-preview .c-red    { color: var(--red); }
+.tts-preview .c-reset  { color: #c8c8d8; }
+.tts-preview .c-sup    { font-size: 10px; color: #a0a0b8; }
+
+/* ── Raw text area ── */
+.raw-output {
+  margin-top: 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 10px;
+  font-family: 'Consolas', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  white-space: pre-wrap;
+  word-break: break-all;
+  max-height: 160px;
+  overflow-y: auto;
+  display: none;
+}
+.raw-output.open { display: block; }
+
+/* ── Spacing / helpers ── */
+.row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+.spacer { height: 16px; }
+.section-label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--muted);
+  padding: 4px 0 8px;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 8px;
+}
+.section-group { margin-bottom: 20px; }
+
+/* ── Toast ── */
+#toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--surface2);
+  border: 1px solid var(--green);
+  color: var(--green);
+  padding: 10px 18px;
+  border-radius: 8px;
+  font-size: 13px;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 0.2s, transform 0.2s;
+  pointer-events: none;
+  z-index: 999;
+}
+#toast.show { opacity: 1; transform: translateY(0); }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: var(--bg); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>☩ Trench Crusade → TTS Converter ☩</h1>
+    <div class="subtitle">Convert .rosz / .ros roster files to Tabletop Simulator card text</div>
+  </div>
+  <div class="badge">No server required · runs in your browser</div>
+</header>
+
+<main>
+  <!-- Drop zone -->
+  <div id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <div class="drop-icon">⚔</div>
+    <h2>Drop your roster file here</h2>
+    <p>Accepts .rosz and .ros files · click to browse</p>
+    <input type="file" id="file-input" accept=".rosz,.ros">
+  </div>
+
+  <!-- Output area (hidden until file loaded) -->
+  <div id="roster-output" style="display:none">
+    <div class="spacer"></div>
+
+    <!-- Roster header -->
+    <div id="roster-header">
+      <div class="roster-name" id="roster-name-display"></div>
+      <div class="roster-meta" id="roster-meta-display"></div>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Options + actions bar -->
+    <div class="row">
+      <span class="options-label">Output</span>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="btn-compressed" onclick="setVerbose(false)">Compressed</button>
+        <button class="toggle-btn" id="btn-verbose" onclick="setVerbose(true)">Verbose</button>
+      </div>
+      <span class="options-label" style="margin-left:8px">Raw text</span>
+      <div class="toggle-group">
+        <button class="toggle-btn active" id="btn-hide-raw" onclick="setShowRaw(false)">Hide</button>
+        <button class="toggle-btn" id="btn-show-raw" onclick="setShowRaw(true)">Show</button>
+      </div>
+      <span style="flex:1"></span>
+      <button class="btn primary" onclick="copyAll()">⎘ Copy Entire Warband</button>
+      <button class="btn" onclick="exportForTTSMod()">⬡ Export for TTS Mod</button>
+      <button class="btn" onclick="reloadFile()">↺ Reload</button>
+    </div>
+
+    <div class="spacer"></div>
+
+    <!-- Cards -->
+    <div id="cards-list"></div>
+  </div>
+</main>
+
+<div id="toast">Copied to clipboard!</div>
+
+<!-- Libraries -->
+<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.2/Sortable.min.js"></script>
+
+<script>
+'use strict';
+
+// ── TTS Color codes ────────────────────────────────────────────────────────────
+const C = {
+  HEADER : '[fde047]',
+  BLUE   : '[89E1E3]',
+  ORANGE : '[fa8231]',
+  PURPLE : '[C966E5]',
+  GREY   : '[b2b7be]',
+  YELLOW : '[f7b731]',
+  TEAL   : '[0fb9b1]',
+  GREEN  : '[20bf6b]',
+  RED    : '[eb3b5a]',
+  RESET  : '[-]',
+  SUP_O  : '[sup]',
+  SUP_C  : '[/sup]',
+};
+
+// ── Known abilities (hand-crafted concise summaries) ──────────────────────────
+const KNOWN_ABILITIES = {
+  // Universal
+  'fear':                         'Attackers: -1 DICE melee vs this model. Immune to FEAR.',
+  'tough':                        'First OOA result treated as Down instead.',
+  'strong':                       '+1 INJ MOD on melee attacks.',
+  'impervious':                   'Cannot gain status markers (BLOOD, INFECTION, etc.).',
+  'infiltrator':                  'Deploys after opponents anywhere >6" from enemies.',
+  'scout':                        'Free move before the first activation of the game.',
+  'levitate':                     'Ignores terrain height for movement.',
+  'abiotic life':                 'Immune to BLOOD/INFECTION MARKERS.',
+  'leader':                       'This model leads the warband.',
+  'negate gas':                   'Immune to GAS keyword effects.',
+  'negate shrapnel':              'Immune to SHRAPNEL keyword effects.',
+  'negate fire':                  'Immune to FIRE keyword effects.',
+  'negate fear':                  'Immune to FEAR effects.',
+  'ignore off-hand':              'No penalty for dual-wielding.',
+  'skirmisher':                   "Can move through models; ignores engagement zone.",
+  'agile':                        '+1 DICE risky roll for Climb/Jump/Diving Charge/Dash.',
+
+  // New Antioch
+  'hold your fire!':              'Lieutenant ACTION: Pick 1 enemy in LoS — opponent must Activate it next.',
+  'absolute faith':               "Sniper Priest: Opponent's BLOOD MARKERS don't penalise ranged attacks vs this model.",
+  'aim':                          'Sniper Priest ACTION: Risky +2 DICE; Success = +2 DICE to ranged attacks rest of Activation.',
+  'god is with us!':              'Trench Cleric ACTION: Risky roll; Success = 1 BLESSING MARKER on self or friendly within 6".',
+  'onward christian soldiers!':   'Friendly New Antioch within 8" of Trench Cleric gain NEGATE FEAR.',
+  'assault drill':                'Shock Trooper: Ignore HEAVY on 1 Melee Weapon.',
+  'shock charge':                 'Shock Trooper Charge Bonus: Roll extra D6, use single highest.',
+  'battlefield demolition':       'Combat Engineer: Ignore HEAVY on 1 Satchel Charge.',
+  'set mine':                     'Combat Engineer ACTION: +2 DICE roll; Success = terrain gains MINED.',
+  'defuse mine':                  'Moving into MINED terrain: risky roll; Success removes MINED.',
+  'fortify':                      'ACTION: Risky roll; Success = gains COVER until you move.',
+  'expert medic':                 '+2 DICE to risky roll for Treat ACTION.',
+  'finish the fallen':            '+1 INJ DICE on melee attacks vs Down non-BLACK GRAIL/DEMONIC targets.',
+  'loudspeakers':                 'War Prophet ACTION: Risky +2 DICE; Success = all friendly within 8" move 3" toward nearest visible enemy.',
+  'laying on of hands':           'War Prophet ACTION: Success removes 1 BLOOD from friendly within 6"; Critical removes 3.',
+  'memento mori':                 'War Prophet: First OOA = No Effect instead. Cannot have TOUGH.',
+
+  // Trench Pilgrims
+  'bodyguard':                    'Within 1" of a friendly model: intercept attacks (not BLAST).',
+  'resurrection':                 'Pilgrim killed in campaign: resurrects as Martyr Penitent (45D) with -1 INJ DICE.',
+  'blessed stigmata':             'Each BLOOD removed by REGENERATE 1 places 1 BLESSING MARKER.',
+  'feeble flailing':              'Can melee attack without weapon at -1 DICE.',
+  'mad dash':                     '+1 DICE risky roll for Dash ACTION.',
+  'broken on the wheel':          'START: Choose 1 Pilgrim/Prisoner permanently on the Wheel — injuries go to them until death.',
+  'symphony of slaughter':        '2 Melee Weapons; attack once or twice (first Wheel, second Mace as Off-Hand).',
+  'arise and be healed!':         'Papal States Trench Cleric ACTION: Risky roll; Success = model stands and remove up to D3 BLOOD/INFECTION within 3".',
+
+  // Iron Sultanate
+  'janissary veteran':            'Yüzbaşı upgrade: gains STRONG and Counter-Charge.',
+  'counter-charge':               'If first ACTION is Charge: +1 DICE melee attacks rest of Activation.',
+  'mubarizun':                    '+1 INJ DICE vs targets with TOUGH.',
+  'mastery of the elements':      'Deploy: Give all weapons FIRE or GAS or SHRAPNEL (all must match).',
+  'elemental change':             'ACTION: Risky roll; Success changes Mastery element.',
+  'temporal assassin':            'Charge: 2 targets — charge first, Fight, redeploy within 1" of second, Fight again.',
+  'time slip':                    'If opponent fails attack: redeploy within 6", >1" from enemies.',
+  'light skirmishers':            'Any number of Azebs gain SKIRMISHER for +5 each.',
+  'forward positions':            'Sapper DEPLOY: Up to 6" from zone in contact with terrain ≥½" tall.',
+  'artificial life':              '-1 INJ DICE on all injury rolls (Golems/constructs).',
+  'teeth and claws':              'Can make melee attacks without a weapon.',
+  'pin':                          'Enemy Down models on ≤40mm base cannot stand if within 1".',
+  'trample':                      'ACTION: Melee Attack vs Down enemy only; no weapon, IGNORE ARMOUR.',
+  'ammunition sacrament':         'Mendelist ACTION: Risky roll; Success = 1 of 4 Sacrament bonuses to friendly within 1" until next Activation.',
+  'faithful followers':           'When activating a model within 1", can also activate Mendelist (if not yet activated).',
+  'martial prowess':              'Mamluk: Greatsword loses HEAVY; Jezzail gains ASSAULT and Shield Combo.',
+  'sworn brethren':               'Mamluk: Can form FIRETEAM with 1 other ELITE in addition to normal FIREATEAMs.',
+  'automaton destrier':           'Mamluk Faris: Deploys within 1" of battlefield edge >8" from enemies, after Infiltrators.',
+  'eye of god':                   'Observer: Re-roll failed rolls; any 1s = Failure, taken Down, Activation ends.',
+  'lightning speed':              'Observer: Polearm gains CLEAVE 2.',
+  'temporal fugue':               '-1 DICE to ranged/melee targeting this model.',
+  'voice of god':                 'Observer ACTION: Risky roll; Success = pick 1 unActivated model anywhere; their Activation begins.',
+
+  // Heretic Legions
+  'puppet master':                "Heretic Priest ACTION: Risky roll; Success = move 1 model within 12\" D6\" in any direction.",
+  'stealth generator':            'Death Commando: -1 DICE to ranged attacks targeting it.',
+  'hide':                         "ACTION: Risky +1 DICE; Success = cannot be chosen target until it moves or charges.",
+  'unholy hymns':                 '-1 DICE to enemy Success Rolls within 8" while 1+ Choristers active.',
+  'heretic legionnaires':         'Up to 1 Trooper per Trooper upgrade: +10D; change Ranged OR Melee to +1.',
+  'assault beast':                '2 Melee Weapons (Chainsaw/Claws); attack once or twice (Claws Off-Hand).',
+  'loping dash':                  '+1 DICE risky roll for Dash ACTION.',
+  'chattel':                      'Can sell in Quartermaster Step for 25D + half Battlekit cost.',
+  'dark blessing':                'When this model goes OOA: place 1 BLESSING MARKER on nearest friendly ELITE HERETIC.',
+
+  // Court of the Seven-Headed Serpent
+  'blood magic':                  'Spell (Cost 1): Before injury rolls, +1 INJ DICE to all rolls for this attack.',
+  'blessing of the serpent moon': 'Spell (2/4/6 Cost): Before injury roll, -1 INJ MOD per 2 BLOOD spent.',
+  'left-hand path':               'Spell (Cost 2): Move into terrain contact; redeploy within 6" of terrain >1" from enemies.',
+  'oracle beast cloak':           'Spell (Cost 3): 1x/turn after Injury Roll, change result to No Effect.',
+  'shadow-walker':                'Spell (Cost 2): Before Retreat, enemy cannot melee attack on retreat.',
+  'shadow walker':                '-2 DICE to ranged attacks targeting this model at Long Range (instead of -1 DICE).',
+  'charge of hatred':             'Charge counts as Move 12". No D6 Charge Bonus roll; ignore that rule entirely.',
+  'lesser mark of cain':          'This model has the -1 INJURY DICE Keyword.',
+  'aura of wrath':                '+1 DICE melee and Dash risky rolls for friendly within 8" (incl. self).',
+  'aura of lust':                 'Enemy within 4" wearing non-IMPERVIOUS Armour: negate any Armour Keywords/rules.',
+  'aura of pride':                'When Activation ends: place 1 BLOOD MARKER on each enemy within 8".',
+  'aura of sloth':                'Enemy within 8" treat Minor Hit as Down.',
+  'aura of gluttony':             '-1 DICE to enemy within 8" (not BLACK GRAIL/ARTIFICIAL).',
+  'aura of envy':                 'Enemy within 12" cannot Charge a friendly within 1" of its own warband.',
+  'aura of greed':                'Enemy within 12" taking Charge must charge this model if in LoS and reachable.',
+  'annihilator':                  'Desecrated Saint: 1 Fight ACTION per Melee Weapon per Activation.',
+  'law of hell':                  "Kill ELITE enemy = removed from game; doesn't count for Morale.",
+  'torturer':                     'Can melee attack a friendly non-DEMONIC within 1". Cannot attack again same Activation.',
+  'forbidden pleasures':          'Per model with this ability: place 3 BLOOD MARKERS on 1 non-DEMONIC friendly before deployment.',
+  'barbed embrace':               'Enemy within 1" cannot Retreat.',
+  'iron-clawed hands':            'Melee attack with CLEAVE 2 and CRITICAL without weapon; Off-Hand applies.',
+  'goetic gaze':                  'ACTION: Success roll; Success = 1 BLOOD on enemy within 24" LoS (2 on Critical).',
+  'goetic portal':                'ACTION: Risky +1 DICE; Success = redeploy within 6"; can bring ≤32mm enemy.',
+  'charm of acedia':              'Spell (Cost 1) ELITE: Next ACTION\'s first Success Roll auto-succeeds.',
+  'daemonium meridianum':         'ELITE: Open/Dangerous terrain within 6" treated as DIFFICULT.',
+  'morphean mind':                'ELITE: Opponent can spend max 1 BLOOD for -1 DICE on Success Rolls.',
+  'belly of the beast':           'After melee attack, place 1 BLOOD on attacker if target gained ≥1 BLOOD.',
+  'eater of the flesh':           'After melee attack, remove 1 BLOOD per BLOOD placed on target (not BLACK GRAIL/DEMONIC).',
+  'uncaring gluttony':            'Spell (Cost 2) ELITE: Pick 1 unActivated enemy; 1 Equipment rendered unusable.',
+  'black heart':                  'Spell (Cost 1) ELITE: Before a roll, +1 DICE.',
+  'body of gold':                 'ELITE: Model gains GOLEM; loses/cannot gain TOUGH.',
+  'greedy hearts':                'ELITE: After deployment, place 1 BLESSING per enemy costing ≥150D.',
+  'battlefield vivisection':      'Glorious Deed: Take 3+ enemies OOA while within 1" of each.',
+  'prize specimens':              'Melee OOA vs DEMONIC/BLACK GRAIL: place 1 BLESSING MARKER.',
+  'iron fists':                   'Melee attack with CLEAVE 2 without weapon; Off-Hand applies.',
+  'exquisite pain':               'Spell (1-2 Cost): Pick model in LoS; place BLOOD equal to cost spent next to it.',
+  'devour the guilty':            'ACTION: Pick friendly or enemy ≤40mm within 1"; Risky roll to devour them.',
+  'pit locust sting':             'Melee attack with CLEAVE 2 and SHRAPNEL without weapon.',
+  'burning inferno':              'Spell (Cost 2): BLAST, FIRE, SCATTER ranged attack 36".',
+
+  // Black Grail
+  'undead fortitude':             '-1 INJ DICE on injury rolls (not vs FIRE).',
+  'infernal iron armour':         '[Armour] -2 INJ MOD, IMPERVIOUS.',
+  'noble hierarchy':              'Enemy warbands roll Morale at -1 DICE. Court Warbands and Black Grail ignore this.',
+  'frenzied followers':           '+1 DICE risky roll for Dash actions by friendly within 8" of this model.',
+  'cadre of flesh':               'Non-BLAST hits on this model: redirect injury to a Ravenous within 4".',
+  'pestilent':                    'Can melee attack with INFECTION MARKERS + CRITICAL without weapon.',
+  'overwhelming horde':           'Can melee attack without weapon. +1 DICE per other friendly within 3".',
+  'ravenous infection':           'ACTION: Risky roll. Success/Crit: place 1 INF MARKER on any model within 1".',
+  'cradle of filth':              'Melee attacks gain CRITICAL.',
+  'unending horde':               'Does not count toward Maximum Field Strength.',
+  'gnashing and tearing':         'Fight action: make 2 melee attacks (uses built-in weapons).',
+  'dormant hunger':               'When would go OOA: go Dormant instead. Returns if INF placed on marker.',
+  'plague-ridden flesh':          '-2 INJ DICE on injury rolls (not vs FIRE).',
+  'knight companion of the feast': 'Nearby friendly models: +1 DICE risky roll for Ravenous Infection if within 3".',
+  'knight of twin cleavers':      'Gains IGNORE OFF-HAND. Melee attacks gain SHRAPNEL.',
+  'butcher king':                 'Campaign: if not OOA and took 1+ enemy OOA with melee, gain 1 Glory.',
+  "beelzebub's touch":            'Lord of Tumours: Melee attacks that place markers add 1 extra INF MARKER.',
+  'crushing blows':               'Melee attack without weapon with CLEAVE 2.',
+  'disease carrier':              'Enemy Activated within 1": gains 1 INF MARKER before their actions.',
+  'frightening speed':            '+1 DICE Dash risky roll. Don\'t halve Movement when standing up.',
+  'six-armed monstrosity':        '1 Shoot per Ranged Weapon + 1 Fight per Melee Weapon per Activation; no Off-Hand.',
+  'corpulent':                    '-2 INJ DICE on all injury rolls targeting this model.',
+  'unstoppable':                  '≤32mm models cannot melee attack it on retreat.',
+  'grail devotee':                '+1 INJ MOD per Devotee to melee attacks. Up to 2 per model.',
+
+  // Mercenaries / misc
+  'inspiring relic':              "Bearer doesn't end Activation after failed Risky Success Roll.",
+  'divine judgement':             'Witchburner ACTION: Risky roll; Success = 1 BLOOD on enemy ≤24" (2 if BLACK GRAIL/DEMONIC/HERETIC).',
+  'dignified conduct':            'Cannot take Dash ACTION.',
+  'self sacrifice':               'After hit: place up to 3 BLOOD on attacker; place 1 INFECTION per BLOOD on target.',
+  'harrowing assault':            'Target taken Down/OOA: move model up to 3". If within 1" enemy, take another Fight ACTION.',
+  'enhanced vision':              '+1 DICE ranged attack success rolls.',
+  'combat biologist':             'Gather Knowledge deed: take 3+ enemies OOA within 1" each.',
+
+  // Campaign skills (common)
+  "assassinate":          '+1 DICE to attacks if target has not yet been Activated this Turn.',
+  "athletic":             '+1 DICE to Climb/Jump/Fall rolls.',
+  "champion":             'Melee Weapons without CLEAVE gain CLEAVE 2.',
+  "disengage":            'Enemy cannot melee attack on Retreat.',
+  "dodge":                '-1 DICE to ranged attacks targeting this model.',
+  "far shot":             '+6" to Range of PISTOL and Rifle weapons.',
+  "gunslinger":           'Two PISTOLs: shoot both at once. One pistol = PISTOL in melee.',
+  "hard as nails":        'First Down result = No Effect instead.',
+  "hip shot":             'All Ranged Weapons count as ASSAULT.',
+  "hunter":               'Ranged attacks gain IGNORE COVER.',
+  "melee proficiency":    '+1 DICE to Melee characteristic.',
+  "nimble":               'Do not halve Move when standing up.',
+  "parry":                '-1 DICE to melee attacks targeting this model.',
+  "ranged proficiency":   '+1 DICE to Ranged characteristic.',
+  "relentless charge":    '+1 DICE to melee attacks if successfully charged this Activation.',
+  "sadistic":             '+1 DICE and +1 INJ DICE to melee attacks vs Down targets.',
+  "sixth sense":          'Down result with no BLOOD = Minor Wound instead.',
+  "sniper school":        'Ranged attacks need 1 less BLOOD to convert Injury to Bloodbath.',
+  "stand firm":           'First Down result = Minor Wound instead.',
+  "sprinter":             '+1 DICE to Dash risky roll.',
+  "dragonslayer":         'Change 1 Injury Die to 6 on melee attacks.',
+
+  // Scars / injuries
+  "chest wound":          'All injury rolls made against this model: +1 DICE.',
+  "hand wound":           '-1 DICE to melee attacks using the injured hand.',
+  "head wound":           'Cannot gain Experience Points.',
+  "leg wound":            '-2" Move. -1 DICE to Dash.',
+  "minor wound":          'Cannot be fielded next battle.',
+  "lost arm":             'One less hand — limits weapon/equipment options.',
+  "lost an eye":          '-1 DICE to all ranged attacks.',
+  "severe nerve damage":  'All ACTIONS (including attacks) are now RISKY.',
+  "muscle damage":        'Cannot carry HEAVY weapons.',
+  "shell-shocked":        'Roll D6 before battle: 1-2 = cannot participate.',
+  "paranoid":             'Cannot be deployed within 8" of a friendly model.',
+};
+
+// ── Scar names for red coloring ───────────────────────────────────────────────
+const SCAR_NAMES = new Set([
+  'chest wound','hand wound','head wound','leg wound','minor wound',
+  'lost arm','lost an eye','severe nerve damage','muscle damage',
+  'shell-shocked','paranoid','insomniac','haunted by the antiochians',
+  'haunted by the court','haunted by the grail','haunted by the heretics',
+  'haunted by the pilgrims','haunted by the sultanate','possessed',
+  'expensive treatment','facial scar','dark memory','endure the suffering',
+  'war-luck',
+]);
+
+// ── Campaign advancement skill names for green coloring ───────────────────────
+const ADVANCEMENT_NAMES = new Set([
+  "assassinate","athletic","champion","disengage","dodge","far shot",
+  "gunslinger","hard as nails","hip shot","hunter","melee proficiency",
+  "nimble","parry","ranged proficiency","relentless charge","sadistic",
+  "sixth sense","sniper school","stand firm","sprinter","dragonslayer",
+  "'tis but a scratch","30 pieces of silver","bad company","blessed murder",
+  "blessings of the warrior saint","blood sacrifice","champion",
+  "close quarters combat","cockroach vitality","crooked dice","david and goliath",
+  "endure the suffering","eye of beelzebub","eyes of the fly","favoured by god",
+  "feast on disease","firearm procurement","friends in high places","ghazwa",
+  "glory hound","grail plague","güreş","healing arts","hellfire","incoming",
+  "infect the mind","infused with divine genetics","janissary training",
+  "knight of the flies","knowledge of the sciences","logistical skills",
+  "melee weapon procurement","mendelist chemicals","money can buy anything",
+  "mubaraza","on your knees!","pennies from heaven","plutocracy","point blank",
+  "ranged proficiency","rightfully guided","scarred by pilgrims",
+  "scarred by the antiochians","scarred by the court","scarred by the grail",
+  "scarred by the heretics","scarred by the sultanate","scavenger",
+  "scavengers arsenal","sharp eyes","show-off","silvered tongue","skill & expertise",
+  "sniper's nest","special assault training","strength of samson","surgical strike",
+  "swine hybrid","sword of allah","unsecured loan","walk with god","war stories",
+  "warrior's prayer","war-luck",
+]);
+
+// ── Compression regex patterns (ported from Python) ───────────────────────────
+const COMPRESS_SUBS = [
+  [/^If you do so,\s*/i, ''],
+  [/^you can say that\s*/i, ''],
+  [/^you can\s*/i, ''],
+  [/^you must\s*/i, ''],
+  [/^In addition,?\s*/i, ''],
+  [/^Note that\s*/i, ''],
+  [/^Once per Turn\s*/i, '1x/turn: '],
+  [/\bthe model taking the (\w+ )?ACTION\b/gi, 'the model'],
+  [/\bthe model with this Keyword\b/gi, 'this model'],
+  [/\bA model with this (Goetic )?Ability\b/gi, 'This model'],
+  [/\bA model with this Keyword\b/gi, 'This model'],
+  [/\bfor a model with this\b/gi, ''],
+  [/\bfor this model\b/gi, ''],
+  [/\bfor the model\b/gi, ''],
+  [/Add \+(\d+ DICE) to\b/gi, '+$1 to'],
+  [/Add -(\d+ DICE) to\b/gi, '-$1 to'],
+  [/Add \+(\d+) INJURY MODIFIER\b/gi, '+$1 INJ MOD'],
+  [/Add -(\d+) INJURY MODIFIER\b/gi, '-$1 INJ MOD'],
+  [/Add \+(\d+) INJURY DICE\b/gi, '+$1 INJ DICE'],
+  [/Add -(\d+) INJURY DICE\b/gi, '-$1 INJ DICE'],
+  [/\+(\d+) DICE to (\w+ )?Success Rolls\b/gi, '+$1 DICE $2rolls'],
+  [/-(\d+) DICE to (\w+ )?Success Rolls\b/gi, '-$1 DICE $2rolls'],
+  [/Injury Rolls\b/g, 'injury rolls'],
+  [/Success Roll\b/g, 'success roll'],
+  [/Risky Success Roll\b/gi, 'risky roll'],
+  [/\bINFECTION MARKER(S)?\b/gi, 'INF MARKER'],
+  [/\bBLOOD MARKER(S)?\b/gi, 'BLOOD'],
+  [/unless the attack has the ([A-Z]+) Keyword/gi, '(not vs $1)'],
+  [/if the (?:attack|roll) has the ([A-Z]+) Keyword/gi, '(vs $1 only)'],
+  [/Activation ends immediately\.?\b/gi, 'Activation ends.'],
+  [/If the roll is a Failure,?\s*/gi, 'Fail: '],
+  [/If the roll is a (?:Success or a )?Critical Success,?\s*/gi, 'Crit: '],
+  [/If the roll is a Success(?! or),?\s*/gi, 'Success: '],
+  [/\btake a (?:Risky )?Success Roll\b/gi, 'risky roll'],
+  [/\bOut of Action\b/gi, 'OOA'],
+  [/\bLine of Sight\b/gi, 'LoS'],
+  [/\bMelee Attack(s)?\b/gi, 'melee atk'],
+  [/\bRanged Attack(s)?\b/gi, 'ranged atk'],
+  [/\bMelee Characteristic\b/gi, 'Melee'],
+  [/\bMovement Characteristic\b/gi, 'Move'],
+  [/\bInjury Table\b/gi, 'injury table'],
+  [/\bACTION\b/g, 'action'],
+  [/\s{2,}/g, ' '],
+  [/\s+\./g, '.'],
+  [/\s+,/g, ','],
+];
+
+const MAX_ABILITY_LINE = 180;
+
+function compressAbility(name, text, verbose) {
+  if (verbose) return text;
+  const key = name.toLowerCase().trim();
+  if (KNOWN_ABILITIES[key]) return KNOWN_ABILITIES[key];
+  if (!text) return '';
+
+  let result = text;
+  for (const [pat, repl] of COMPRESS_SUBS) {
+    result = result.replace(pat, repl);
+  }
+  result = result.trim();
+
+  if (result.length > MAX_ABILITY_LINE) {
+    const cut = result.lastIndexOf('.', MAX_ABILITY_LINE);
+    if (cut > MAX_ABILITY_LINE / 2) {
+      result = result.slice(0, cut + 1);
+    } else {
+      result = result.slice(0, MAX_ABILITY_LINE).replace(/\s+\S*$/, '') + '...';
+    }
+  }
+  return result;
+}
+
+// ── XML namespace helpers ─────────────────────────────────────────────────────
+const NS = 'http://www.battlescribe.net/schema/rosterSchema';
+
+function nsFind(el, tag) {
+  return el.getElementsByTagNameNS(NS, tag)[0] || null;
+}
+function nsFindAll(el, tag) {
+  // Only direct children with that tag
+  const result = [];
+  const children = el.children || el.childNodes;
+  for (const child of children) {
+    if (child.localName === tag && child.namespaceURI === NS) {
+      result.push(child);
+    }
+  }
+  return result;
+}
+
+function cleanText(text) {
+  if (!text) return '';
+  return text
+    .replace(/\u00a0/g, ' ')
+    .replace(/\u2033/g, '"')
+    .replace(/\u2032/g, "'")
+    .replace(/\u2019/g, "'")
+    .replace(/\u2018/g, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// ── XML parsing ───────────────────────────────────────────────────────────────
+
+function getCosts(el) {
+  const costs = {};
+  const costsEl = nsFind(el, 'costs');
+  if (!costsEl) return costs;
+  for (const c of nsFindAll(costsEl, 'cost')) {
+    const name = c.getAttribute('name') || '';
+    const val = parseFloat(c.getAttribute('value') || '0') || 0;
+    if (val) costs[name] = val;
+  }
+  return costs;
+}
+
+function getCategories(el) {
+  const cats = [];
+  const catsEl = nsFind(el, 'categories');
+  if (!catsEl) return cats;
+  for (const c of nsFindAll(catsEl, 'category')) {
+    const name = c.getAttribute('name') || '';
+    if (name && name !== 'Configuration') cats.push(name);
+  }
+  return cats;
+}
+
+function extractProfiles(el) {
+  const profiles = [];
+  const profsEl = nsFind(el, 'profiles');
+  if (!profsEl) return profiles;
+  for (const p of nsFindAll(profsEl, 'profile')) {
+    const chars = {};
+    const charsEl = nsFind(p, 'characteristics');
+    if (charsEl) {
+      for (const c of nsFindAll(charsEl, 'characteristic')) {
+        chars[c.getAttribute('name') || ''] = cleanText(c.textContent || '');
+      }
+    }
+    profiles.push({
+      name: p.getAttribute('name') || '',
+      type: p.getAttribute('typeName') || '',
+      chars,
+    });
+  }
+  return profiles;
+}
+
+function extractModelData(sel) {
+  const name     = sel.getAttribute('name') || 'Unknown';
+  const costs    = getCosts(sel);
+  const keywords = getCategories(sel);
+
+  const stats     = {};
+  const abilities = [];
+  const weapons   = [];
+  const seen      = new Set();
+
+  function processProfiles(profilesList) {
+    for (const p of profilesList) {
+      const pname = p.name;
+      const ptype = p.type;
+      const chars = p.chars;
+
+      if (seen.has(pname)) continue;
+      seen.add(pname);
+
+      if (ptype === 'Unit') {
+        stats.Movement = chars.Movement || '';
+        stats.Ranged   = chars.Ranged   || '';
+        stats.Melee    = chars.Melee    || '';
+        stats.Armour   = chars.Armour   || '';
+        stats.Base     = chars.Base     || '';
+      } else if (ptype === 'Ability') {
+        const desc = chars.Description || '';
+        if (desc) abilities.push({ name: pname, text: desc });
+      } else if (ptype === 'Weapon') {
+        weapons.push({
+          name:     pname,
+          type:     chars.Type     || '',
+          range:    chars.Range    || '',
+          keywords: chars.Keywords || '',
+          rules:    chars.Rules    || '',
+        });
+      } else if (ptype === 'Battlekit') {
+        const btype  = chars.Type     || '';
+        const rules  = chars.Rules    || '';
+        const kwStr  = chars.Keywords || '';
+        const rng    = chars.Range    || '';
+        if (rng && rng !== '-') {
+          weapons.push({ name: pname, type: btype, range: rng, keywords: kwStr, rules });
+        } else {
+          const parts = [];
+          if (btype && btype !== '-') parts.push(`[${btype}]`);
+          if (kwStr && kwStr !== '-') parts.push(kwStr);
+          if (rules && rules !== '-') parts.push(rules);
+          abilities.push({ name: pname, text: parts.join('  ') });
+        }
+      }
+    }
+  }
+
+  function walk(s) {
+    processProfiles(extractProfiles(s));
+    const subsEl = nsFind(s, 'selections');
+    if (subsEl) {
+      for (const child of nsFindAll(subsEl, 'selection')) {
+        walk(child);
+      }
+    }
+  }
+
+  walk(sel);
+
+  return {
+    name,
+    ducats:    Math.round(costs['Ducats'] || 0),
+    glory:     Math.round(costs['Glory Points'] || 0),
+    keywords,
+    stats,
+    abilities,
+    weapons,
+  };
+}
+
+function extractWarbandRules(sel) {
+  const rules = [];
+  const seen  = new Set();
+
+  function collect(s) {
+    for (const p of extractProfiles(s)) {
+      const pname = p.name;
+      if (seen.has(pname)) continue;
+      seen.add(pname);
+
+      const ptype = p.type;
+      const chars = p.chars;
+
+      if (ptype === 'Ability') {
+        const desc = chars.Description || '';
+        if (desc) rules.push({ name: pname, text: desc });
+      } else if (ptype === 'Battlekit') {
+        const parts = [];
+        const btype = chars.Type || '';
+        const kwStr = chars.Keywords || '';
+        const rule  = chars.Rules || '';
+        if (btype && btype !== '-') parts.push(`[${btype}]`);
+        if (kwStr && kwStr !== '-') parts.push(kwStr);
+        if (rule  && rule  !== '-') parts.push(rule);
+        if (parts.length) rules.push({ name: pname, text: parts.join('  ') });
+      }
+    }
+    const subsEl = nsFind(s, 'selections');
+    if (subsEl) {
+      for (const child of nsFindAll(subsEl, 'selection')) {
+        collect(child);
+      }
+    }
+  }
+
+  collect(sel);
+  return rules;
+}
+
+const SKIP_NAMES = new Set(['Campaign Rules']);
+
+function parseRosterXML(xmlText) {
+  const parser = new DOMParser();
+  const doc    = parser.parseFromString(xmlText, 'text/xml');
+  const root   = doc.documentElement;
+
+  const rosterName = root.getAttribute('name') || 'Unknown Warband';
+
+  const totalCosts = {};
+  const costsEl = nsFind(root, 'costs');
+  if (costsEl) {
+    for (const c of nsFindAll(costsEl, 'cost')) {
+      const val = parseFloat(c.getAttribute('value') || '0') || 0;
+      if (val) totalCosts[c.getAttribute('name') || ''] = val;
+    }
+  }
+
+  const forces  = nsFind(root, 'forces');
+  const force   = forces ? nsFind(forces, 'force') : null;
+  const faction = force  ? (force.getAttribute('catalogueName') || '') : '';
+
+  const sels    = force ? nsFind(force, 'selections') : null;
+  if (!sels) {
+    return {
+      name: rosterName, faction,
+      ducats: Math.round(totalCosts['Ducats'] || 0),
+      glory:  Math.round(totalCosts['Glory Points'] || 0),
+      models: [], warbandRules: [], warbandVariants: [],
+    };
+  }
+
+  const models           = [];
+  const warbandRules     = [];
+  const warbandVariants  = [];
+
+  for (const sel of nsFindAll(sels, 'selection')) {
+    const stype = sel.getAttribute('type') || '';
+    const sname = sel.getAttribute('name') || '';
+
+    if (stype === 'model') {
+      models.push(extractModelData(sel));
+    } else if (stype === 'upgrade' && !SKIP_NAMES.has(sname)) {
+      if (sname === 'Warband Variant') {
+        const subSels = nsFind(sel, 'selections');
+        if (subSels) {
+          for (const vsub of nsFindAll(subSels, 'selection')) {
+            const vname  = vsub.getAttribute('name') || '';
+            const vrules = extractWarbandRules(vsub);
+            if (vrules.length) warbandVariants.push({ variantName: vname, rules: vrules });
+          }
+        }
+        // Also capture abilities directly on the Warband Variant entry
+        const directRules = extractWarbandRules(sel);
+        const usedNames   = new Set(warbandVariants.flatMap(wv => wv.rules.map(r => r.name)));
+        const topRules    = directRules.filter(r => !usedNames.has(r.name));
+        if (topRules.length) warbandVariants.push({ variantName: 'Warband Rules', rules: topRules });
+      } else {
+        const rules = extractWarbandRules(sel);
+        if (rules.length) warbandRules.push({ selectionName: sname, rules });
+      }
+    }
+  }
+
+  return {
+    name: rosterName, faction,
+    ducats: Math.round(totalCosts['Ducats'] || 0),
+    glory:  Math.round(totalCosts['Glory Points'] || 0),
+    models, warbandRules, warbandVariants,
+  };
+}
+
+// ── TTS card text generation ──────────────────────────────────────────────────
+
+function abilityColor(name) {
+  const key = name.toLowerCase().trim();
+  if (SCAR_NAMES.has(key)) return { color: C.RED, icon: '▽' };
+  if (ADVANCEMENT_NAMES.has(key)) return { color: C.GREEN, icon: '△' };
+  return { color: C.TEAL, icon: '✧' };
+}
+
+function weaponInline(w) {
+  const parts = [w.name];
+  if (w.range && w.range !== '-') parts.push(w.range);
+  if (w.keywords && w.keywords !== '-') parts.push(w.keywords);
+  if (w.rules && w.rules !== '-' && w.rules.length <= 60) parts.push(w.rules);
+  return parts.join(' ');
+}
+
+function formatModelCard(model, verbose) {
+  const lines = [];
+
+  // ── Name + cost line ──────────────────────────────────────────────────────
+  const costParts = [];
+  if (model.ducats) costParts.push(`${model.ducats}D`);
+  if (model.glory)  costParts.push(`${model.glory}GP`);
+  const costStr = costParts.length ? `  (${costParts.join(', ')})` : '';
+  lines.push(`${C.HEADER}☩☩ ${model.name}${costStr} ☩☩${C.RESET}`);
+
+  // ── Stats line ───────────────────────────────────────────────────────────
+  const s = model.stats;
+  const statParts = [];
+  if (s.Movement) statParts.push(`${C.BLUE}MOV${C.RESET} ${s.Movement}`);
+  if (s.Melee)    statParts.push(`${C.ORANGE}✢${C.RESET} ${s.Melee}`);
+  if (s.Ranged)   statParts.push(`${C.PURPLE}⊕${C.RESET} ${s.Ranged}`);
+  if (s.Armour)   statParts.push(`${C.GREY}❖${C.RESET} ${s.Armour}`);
+  if (s.Base)     statParts.push(`${C.GREY}BASE${C.RESET} ${s.Base}`);
+  if (statParts.length) lines.push('  ' + statParts.join('  '));
+
+  // ── Keywords ──────────────────────────────────────────────────────────────
+  if (model.keywords.length) {
+    lines.push(`  ${C.GREY}${C.SUP_O}[${model.keywords.join(', ')}]${C.SUP_C}${C.RESET}`);
+  }
+
+  // ── Weapons ───────────────────────────────────────────────────────────────
+  if (model.weapons.length) {
+    for (const w of model.weapons) {
+      lines.push(`  ${C.YELLOW}✜ ${weaponInline(w)}${C.RESET}`);
+    }
+  }
+
+  // ── Abilities ─────────────────────────────────────────────────────────────
+  if (model.abilities.length) {
+    for (const ab of model.abilities) {
+      const compressed = compressAbility(ab.name, ab.text, verbose);
+      const { color, icon } = abilityColor(ab.name);
+      let line = `  ${color}${icon} ${ab.name}${C.RESET}`;
+      if (compressed) line += `  ${C.SUP_O}${compressed}${C.SUP_C}`;
+      lines.push(line);
+    }
+  }
+
+  return lines.join('\n');
+}
+
+function formatWarbandRuleCard(selName, rules, verbose) {
+  const lines = [`${C.HEADER}☩☩ ${selName} ☩☩${C.RESET}`];
+  for (const rule of rules) {
+    const compressed = compressAbility(rule.name, rule.text, verbose);
+    let line = `  ${C.YELLOW}✜ ${rule.name}${C.RESET}`;
+    if (compressed) line += `\n  ${C.SUP_O}${compressed}${C.SUP_C}`;
+    lines.push(line);
+  }
+  return lines.join('\n');
+}
+
+function buildCombinedOutput(roster, verbose) {
+  const blocks = [];
+  const sep = '═'.repeat(52);
+
+  blocks.push(
+    `${C.HEADER}${sep}${C.RESET}\n` +
+    `${C.HEADER}☩ ${roster.name}  (${roster.faction}) ☩${C.RESET}\n` +
+    `${C.SUP_O}Total: ${roster.ducats}D  ${roster.glory}GP${C.SUP_C}\n` +
+    `${C.HEADER}${sep}${C.RESET}`
+  );
+
+  if (roster.warbandVariants.length) {
+    blocks.push(`${C.HEADER}── WARBAND VARIANT ──${C.RESET}`);
+    for (const wv of roster.warbandVariants) {
+      blocks.push(formatWarbandRuleCard(wv.variantName, wv.rules, verbose));
+    }
+  }
+
+  if (roster.warbandRules.length) {
+    blocks.push(`${C.HEADER}── WARBAND RULES ──${C.RESET}`);
+    for (const wr of roster.warbandRules) {
+      blocks.push(formatWarbandRuleCard(wr.selectionName, wr.rules, verbose));
+    }
+  }
+
+  if (roster.models.length) {
+    blocks.push(`${C.HEADER}── MODELS ──${C.RESET}`);
+    for (const model of roster.models) {
+      blocks.push(formatModelCard(model, verbose));
+    }
+  }
+
+  return blocks.join('\n\n');
+}
+
+// ── TTS text → HTML renderer (for visual preview) ────────────────────────────
+
+const COLOR_MAP = {
+  'fde047': 'c-gold',
+  '89e1e3': 'c-blue',
+  'fa8231': 'c-orange',
+  'c966e5': 'c-purple',
+  'b2b7be': 'c-grey',
+  'f7b731': 'c-yellow',
+  '0fb9b1': 'c-teal',
+  '20bf6b': 'c-green',
+  'eb3b5a': 'c-red',
+};
+
+function renderTTStoHTML(text) {
+  // Escape HTML
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  // Handle [sup]...[/sup]
+  html = html.replace(/\[sup\]([\s\S]*?)\[\/sup\]/gi, '<span class="c-sup">$1</span>');
+
+  // Handle [-] reset
+  html = html.replace(/\[-\]/g, '</span>');
+
+  // Handle [hexcode] color starts
+  html = html.replace(/\[([0-9a-fA-F]{6})\]/g, (_, hex) => {
+    const cls = COLOR_MAP[hex.toLowerCase()] || 'c-reset';
+    return `<span class="${cls}">`;
+  });
+
+  return html;
+}
+
+// ── App state ─────────────────────────────────────────────────────────────────
+let currentRoster   = null;
+let verbose         = false;
+let showRaw         = false;
+let currentFile     = null;
+let cardOrder       = [];  // array of {type: 'model'|'warbandRule'|'variant', index: number}
+
+// ── UI rendering ──────────────────────────────────────────────────────────────
+
+function renderRoster() {
+  if (!currentRoster) return;
+
+  // Header
+  document.getElementById('roster-name-display').textContent = currentRoster.name;
+  const meta = document.getElementById('roster-meta-display');
+  meta.innerHTML = `
+    <span class="meta-badge badge-faction">⚔ ${currentRoster.faction || 'Unknown Faction'}</span>
+    <span class="meta-badge badge-ducats">◈ ${currentRoster.ducats}D</span>
+    <span class="meta-badge badge-glory">✦ ${currentRoster.glory}GP</span>
+  `;
+
+  // Build card order if not set
+  if (!cardOrder.length) {
+    for (let i = 0; i < currentRoster.models.length; i++) {
+      cardOrder.push({ type: 'model', index: i });
+    }
+    for (let i = 0; i < currentRoster.warbandVariants.length; i++) {
+      cardOrder.push({ type: 'variant', index: i });
+    }
+    for (let i = 0; i < currentRoster.warbandRules.length; i++) {
+      cardOrder.push({ type: 'warbandRule', index: i });
+    }
+  }
+
+  const container = document.getElementById('cards-list');
+  container.innerHTML = '';
+
+  // Section grouping
+  const variantItems = cardOrder.filter(c => c.type === 'variant');
+  const ruleItems    = cardOrder.filter(c => c.type === 'warbandRule');
+  const modelItems   = cardOrder.filter(c => c.type === 'model');
+
+  // Render variants
+  if (variantItems.length) {
+    const group = document.createElement('div');
+    group.className = 'section-group';
+    group.innerHTML = '<div class="section-label">Warband Variants</div>';
+    for (const ref of variantItems) {
+      const wv   = currentRoster.warbandVariants[ref.index];
+      const text = formatWarbandRuleCard(wv.variantName, wv.rules, verbose);
+      group.appendChild(buildCardEl(ref, wv.variantName, '🐍', text, null));
+    }
+    container.appendChild(group);
+  }
+
+  // Render warband rules
+  if (ruleItems.length) {
+    const group = document.createElement('div');
+    group.className = 'section-group';
+    group.innerHTML = '<div class="section-label">Warband Rules</div>';
+    for (const ref of ruleItems) {
+      const wr   = currentRoster.warbandRules[ref.index];
+      const text = formatWarbandRuleCard(wr.selectionName, wr.rules, verbose);
+      group.appendChild(buildCardEl(ref, wr.selectionName, '📜', text, null));
+    }
+    container.appendChild(group);
+  }
+
+  // Render models
+  if (modelItems.length) {
+    const group = document.createElement('div');
+    group.className = 'section-group';
+    group.innerHTML = '<div class="section-label">Models · drag to reorder</div>';
+    for (const ref of modelItems) {
+      const model = currentRoster.models[ref.index];
+      const cost  = [model.ducats ? `${model.ducats}D` : '', model.glory ? `${model.glory}GP` : ''].filter(Boolean).join(' / ');
+      const text  = formatModelCard(model, verbose);
+      group.appendChild(buildCardEl(ref, model.name, '⚔', text, cost));
+    }
+    container.appendChild(group);
+
+    // Make models sortable
+    Sortable.create(group, {
+      animation: 150,
+      handle: '.drag-handle',
+      ghostClass: 'sortable-ghost',
+      chosenClass: 'sortable-chosen',
+      onEnd(evt) {
+        // Reorder the model subset
+        const items = Array.from(group.querySelectorAll('.card-item[data-type="model"]'));
+        const newOrder = items.map(el => {
+          const idx = parseInt(el.dataset.index, 10);
+          return { type: 'model', index: idx };
+        });
+        // Replace model entries in cardOrder with the new order
+        const nonModel = cardOrder.filter(c => c.type !== 'model');
+        cardOrder = [...nonModel, ...newOrder];
+      },
+    });
+  }
+
+  document.getElementById('roster-output').style.display = '';
+}
+
+function buildCardEl(ref, title, icon, cardText, costStr) {
+  const el = document.createElement('div');
+  el.className = 'card-item';
+  el.dataset.type  = ref.type;
+  el.dataset.index = ref.index;
+
+  const isDraggable = ref.type === 'model';
+
+  el.innerHTML = `
+    <div class="card-header" onclick="toggleCard(this)">
+      ${isDraggable ? '<span class="drag-handle" onclick="event.stopPropagation()">⠿</span>' : '<span style="width:20px"></span>'}
+      <span class="card-type-icon">${icon}</span>
+      <span class="card-title">${escHtml(title)}</span>
+      ${costStr ? `<span class="card-cost">${escHtml(costStr)}</span>` : ''}
+      <button class="card-copy-btn" onclick="copyCard(this, event)"
+              data-text="${escAttr(cardText)}">⎘ Copy</button>
+      <button class="card-expand-btn">▸</button>
+    </div>
+    <div class="card-body">
+      <div class="tts-preview">${renderTTStoHTML(cardText)}</div>
+      <div class="raw-output ${showRaw ? 'open' : ''}">${escHtml(cardText)}</div>
+    </div>
+  `;
+  return el;
+}
+
+function toggleCard(headerEl) {
+  const body   = headerEl.nextElementSibling;
+  const btn    = headerEl.querySelector('.card-expand-btn');
+  const isOpen = body.classList.contains('open');
+  body.classList.toggle('open', !isOpen);
+  btn.textContent = isOpen ? '▸' : '▾';
+}
+
+function copyCard(btn, evt) {
+  evt.stopPropagation();
+  const text = btn.dataset.text;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.classList.add('copied');
+    btn.textContent = '✓ Copied';
+    setTimeout(() => {
+      btn.classList.remove('copied');
+      btn.textContent = '⎘ Copy';
+    }, 1800);
+    showToast('Card copied!');
+  });
+}
+
+function copyAll() {
+  if (!currentRoster) return;
+
+  // Build combined output in current card order
+  const blocks = [];
+  const sep = '═'.repeat(52);
+  blocks.push(
+    `${C.HEADER}${sep}${C.RESET}\n` +
+    `${C.HEADER}☩ ${currentRoster.name}  (${currentRoster.faction}) ☩${C.RESET}\n` +
+    `${C.SUP_O}Total: ${currentRoster.ducats}D  ${currentRoster.glory}GP${C.SUP_C}\n` +
+    `${C.HEADER}${sep}${C.RESET}`
+  );
+
+  const variantRefs = cardOrder.filter(c => c.type === 'variant');
+  const ruleRefs    = cardOrder.filter(c => c.type === 'warbandRule');
+  const modelRefs   = cardOrder.filter(c => c.type === 'model');
+
+  if (variantRefs.length) {
+    blocks.push(`${C.HEADER}── WARBAND VARIANT ──${C.RESET}`);
+    for (const ref of variantRefs) {
+      const wv = currentRoster.warbandVariants[ref.index];
+      blocks.push(formatWarbandRuleCard(wv.variantName, wv.rules, verbose));
+    }
+  }
+  if (ruleRefs.length) {
+    blocks.push(`${C.HEADER}── WARBAND RULES ──${C.RESET}`);
+    for (const ref of ruleRefs) {
+      const wr = currentRoster.warbandRules[ref.index];
+      blocks.push(formatWarbandRuleCard(wr.selectionName, wr.rules, verbose));
+    }
+  }
+  if (modelRefs.length) {
+    blocks.push(`${C.HEADER}── MODELS ──${C.RESET}`);
+    for (const ref of modelRefs) {
+      const model = currentRoster.models[ref.index];
+      blocks.push(formatModelCard(model, verbose));
+    }
+  }
+
+  const full = blocks.join('\n\n');
+  navigator.clipboard.writeText(full).then(() => {
+    showToast('Entire warband copied to clipboard!');
+  });
+}
+
+function exportForTTSMod() {
+  if (!currentRoster) return;
+
+  // Build per-unit blocks in current card order.
+  // Each block: [name section]\n---\n[description section]
+  // Name section  = first line of the card (the ☩☩ Name ☩☩ header)
+  // Desc section  = remaining lines (stats, weapons, abilities, etc.)
+  // Units are separated by TWO blank lines so the TTS mod splitBlocks
+  // can always find the boundary even if individual sections have blank lines.
+  const blocks = [];
+
+  for (const ref of cardOrder) {
+    let cardText = '';
+    if (ref.type === 'model') {
+      cardText = formatModelCard(currentRoster.models[ref.index], verbose);
+    } else if (ref.type === 'warbandRule') {
+      const wr = currentRoster.warbandRules[ref.index];
+      cardText = formatWarbandRuleCard(wr.selectionName, wr.rules, verbose);
+    } else if (ref.type === 'variant') {
+      const wv = currentRoster.warbandVariants[ref.index];
+      cardText = formatWarbandRuleCard(wv.variantName, wv.rules, verbose);
+    }
+    if (!cardText) continue;
+
+    const newlineIdx = cardText.indexOf('\n');
+    const nameSection = newlineIdx === -1 ? cardText : cardText.substring(0, newlineIdx);
+    const descSection = newlineIdx === -1 ? ''        : cardText.substring(newlineIdx + 1);
+    blocks.push(nameSection + '\n---\n' + descSection);
+  }
+
+  // Two blank lines between units (\n\n\n = current line end + 2 blank lines)
+  const full = blocks.join('\n\n\n');
+  navigator.clipboard.writeText(full).then(() => {
+    showToast('Exported for TTS Mod — paste into the TTS panel!');
+  });
+}
+
+function setVerbose(v) {
+  verbose = v;
+  document.getElementById('btn-compressed').classList.toggle('active', !v);
+  document.getElementById('btn-verbose').classList.toggle('active', v);
+  refreshCards();
+}
+
+function setShowRaw(v) {
+  showRaw = v;
+  document.getElementById('btn-hide-raw').classList.toggle('active', !v);
+  document.getElementById('btn-show-raw').classList.toggle('active', v);
+  document.querySelectorAll('.raw-output').forEach(el => el.classList.toggle('open', v));
+}
+
+function refreshCards() {
+  // Re-render card content without resetting order
+  if (!currentRoster) return;
+  document.querySelectorAll('.card-item').forEach(el => {
+    const type  = el.dataset.type;
+    const index = parseInt(el.dataset.index, 10);
+    let text = '';
+    if (type === 'model') {
+      text = formatModelCard(currentRoster.models[index], verbose);
+    } else if (type === 'warbandRule') {
+      const wr = currentRoster.warbandRules[index];
+      text = formatWarbandRuleCard(wr.selectionName, wr.rules, verbose);
+    } else if (type === 'variant') {
+      const wv = currentRoster.warbandVariants[index];
+      text = formatWarbandRuleCard(wv.variantName, wv.rules, verbose);
+    }
+    const preview = el.querySelector('.tts-preview');
+    const raw     = el.querySelector('.raw-output');
+    const copyBtn = el.querySelector('.card-copy-btn');
+    if (preview) preview.innerHTML = renderTTStoHTML(text);
+    if (raw)     raw.textContent   = text;
+    if (copyBtn) copyBtn.dataset.text = text;
+  });
+}
+
+function reloadFile() {
+  cardOrder = [];
+  if (currentFile) {
+    processFile(currentFile);
+  }
+}
+
+// ── File handling ─────────────────────────────────────────────────────────────
+
+async function processFile(file) {
+  currentFile = file;
+  cardOrder   = [];
+
+  let xmlText;
+  try {
+    if (file.name.endsWith('.rosz')) {
+      const zip   = await JSZip.loadAsync(file);
+      const inner = Object.keys(zip.files).filter(k => !zip.files[k].dir)[0];
+      if (!inner) throw new Error('No files found inside .rosz archive');
+      xmlText = await zip.files[inner].async('text');
+    } else {
+      xmlText = await file.text();
+    }
+  } catch (e) {
+    alert(`Failed to read file: ${e.message}`);
+    return;
+  }
+
+  try {
+    currentRoster = parseRosterXML(xmlText);
+  } catch (e) {
+    alert(`Failed to parse roster: ${e.message}`);
+    return;
+  }
+
+  renderRoster();
+}
+
+// ── Event listeners ───────────────────────────────────────────────────────────
+
+const dropZone  = document.getElementById('drop-zone');
+const fileInput = document.getElementById('file-input');
+
+dropZone.addEventListener('dragover', e => {
+  e.preventDefault();
+  dropZone.classList.add('drag-over');
+});
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+});
+fileInput.addEventListener('change', e => {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+  fileInput.value = '';
+});
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(s) {
+  return s.replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+</script>
+</body>
+</html>
