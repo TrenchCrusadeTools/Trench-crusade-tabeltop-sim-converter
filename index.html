@@ -1095,8 +1095,7 @@ function formatModelCard(model, verbose, faction) {
     descLines.push(`  ${C.GREY}${C.SUP_O}[${model.keywords.join(', ')}]${C.SUP_C}${C.RESET}`);
   }
 
-  // Join with a hidden marker between name and desc sections so export can split them
-  return nameLines.join('\n') + '\n\x00' + descLines.join('\n');
+  return nameLines.join('\n') + '\n' + descLines.join('\n');
 }
 
 function formatWarbandRuleCard(selName, rules, verbose) {
@@ -1159,7 +1158,7 @@ const COLOR_MAP = {
   'eb3b5a': 'c-red',
 };
 
-function stripMarker(text) { return text.replace(/\x00/g, ''); }
+function stripMarker(text) { return text; }
 
 function renderTTStoHTML(text) {
   // Escape HTML
@@ -1403,17 +1402,27 @@ function exportForTTSMod() {
     }
     if (!cardText) continue;
 
-    // Model cards embed a \x00 marker between name section (header+stats+weapons)
-    // and desc section (abilities+keywords). Use that for the --- split.
-    // Warband rule cards don't have the marker, so fall back to first-line split.
-    if (cardText.includes('\x00')) {
-      const [nameSection, descSection] = cardText.split('\x00');
+    // Split card into name section (header+stats) and desc section
+    // (weapons+abilities+keywords) by finding the first weapon/ability line.
+    // Weapon lines contain ✢ ⊕ ☽, ability lines contain ✧.
+    // Everything before that = name section, everything from there = desc.
+    const lines = cardText.split('\n');
+    let splitIdx = lines.length; // default: everything in name
+    // Start from line 2 to skip header and stats (which also contain ✢ ⊕ icons)
+    for (let i = 2; i < lines.length; i++) {
+      const stripped = lines[i].replace(/\[[^\]]*\]/g, '');
+      if (stripped.includes('✢') || stripped.includes('⊕') || stripped.includes('☽') || stripped.includes('✧') ||
+          (lines[i].includes('[sup]') && lines[i].includes('[/sup]'))) {
+        splitIdx = i;
+        break;
+      }
+    }
+    const nameSection = lines.slice(0, splitIdx).join('\n');
+    const descSection = lines.slice(splitIdx).join('\n');
+    if (descSection) {
       blocks.push(nameSection + '\n---\n' + descSection);
     } else {
-      const newlineIdx = cardText.indexOf('\n');
-      const nameSection = newlineIdx === -1 ? cardText : cardText.substring(0, newlineIdx);
-      const descSection = newlineIdx === -1 ? '' : cardText.substring(newlineIdx + 1);
-      blocks.push(nameSection + '\n---\n' + descSection);
+      blocks.push(nameSection);
     }
   }
 
