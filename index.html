@@ -385,8 +385,8 @@ main {
     <div class="row">
       <span class="options-label">Output</span>
       <div class="toggle-group">
-        <button class="toggle-btn active" id="btn-compressed" onclick="setVerbose(false)">Compressed</button>
-        <button class="toggle-btn" id="btn-verbose" onclick="setVerbose(true)">Verbose</button>
+        <button class="toggle-btn" id="btn-compressed" onclick="setVerbose(false)">Compressed</button>
+        <button class="toggle-btn active" id="btn-verbose" onclick="setVerbose(true)">Verbose</button>
       </div>
       <span class="options-label" style="margin-left:8px">Raw text</span>
       <div class="toggle-group">
@@ -397,6 +397,10 @@ main {
       <button class="btn primary" onclick="copyAll()">⎘ Copy Entire Warband</button>
       <button class="btn" onclick="exportForTTSMod()">⬡ Export for TTS Mod</button>
       <button class="btn" onclick="reloadFile()">↺ Reload</button>
+    </div>
+
+    <div style="margin-top:10px; padding:10px 14px; background:var(--surface); border:1px solid var(--border); border-radius:8px; font-size:12px; color:var(--muted); line-height:1.5;">
+      <span id="mode-hint-text"><span style="color:var(--gold); font-weight:600;">Verbose mode is on.</span> Cards show full ability text from the rulebook. If text overflows or doesn't fit on your TTS cards, switch to <strong style="color:var(--text);">Compressed</strong> — it shortens abilities to one-line summaries.</span>
     </div>
 
     <div class="spacer"></div>
@@ -1014,7 +1018,7 @@ function weaponInline(w) {
   const parts = [w.name];
   if (w.range && w.range !== '-') parts.push(w.range);
   if (w.keywords && w.keywords !== '-') parts.push(w.keywords);
-  if (w.rules && w.rules !== '-' && w.rules.length <= 60) parts.push(w.rules);
+  if (w.rules && w.rules !== '-') parts.push(w.rules);
   return parts.join(' ');
 }
 
@@ -1022,11 +1026,7 @@ function formatModelCard(model, verbose) {
   const lines = [];
 
   // ── Name + cost line ──────────────────────────────────────────────────────
-  const costParts = [];
-  if (model.ducats) costParts.push(`${model.ducats}D`);
-  if (model.glory)  costParts.push(`${model.glory}GP`);
-  const costStr = costParts.length ? `  (${costParts.join(', ')})` : '';
-  lines.push(`${C.HEADER}☩☩ ${model.name}${costStr} ☩☩${C.RESET}`);
+  lines.push(`${C.HEADER}☩☩ ${model.name} ☩☩${C.RESET}`);
 
   // ── Stats line ───────────────────────────────────────────────────────────
   const s = model.stats;
@@ -1038,15 +1038,18 @@ function formatModelCard(model, verbose) {
   if (s.Base)     statParts.push(`${C.GREY}BASE${C.RESET} ${s.Base}`);
   if (statParts.length) lines.push('  ' + statParts.join('  '));
 
-  // ── Keywords ──────────────────────────────────────────────────────────────
-  if (model.keywords.length) {
-    lines.push(`  ${C.GREY}${C.SUP_O}[${model.keywords.join(', ')}]${C.SUP_C}${C.RESET}`);
-  }
-
   // ── Weapons ───────────────────────────────────────────────────────────────
   if (model.weapons.length) {
     for (const w of model.weapons) {
-      lines.push(`  ${C.YELLOW}✜ ${weaponInline(w)}${C.RESET}`);
+      const wRange = (w.range || '').toLowerCase().trim();
+      const isRanged = wRange && wRange !== '-' && wRange !== 'melee';
+      let wColor, wIcon;
+      if (isRanged) {
+        wColor = C.PURPLE; wIcon = '⊕';
+      } else {
+        wColor = C.ORANGE; wIcon = '✢';
+      }
+      lines.push(`  ${wColor}${wIcon} ${weaponInline(w)}${C.RESET}`);
     }
   }
 
@@ -1059,6 +1062,11 @@ function formatModelCard(model, verbose) {
       if (compressed) line += `  ${C.SUP_O}${compressed}${C.SUP_C}`;
       lines.push(line);
     }
+  }
+
+  // ── Keywords ──────────────────────────────────────────────────────────────
+  if (model.keywords.length) {
+    lines.push(`  ${C.GREY}${C.SUP_O}[${model.keywords.join(', ')}]${C.SUP_C}${C.RESET}`);
   }
 
   return lines.join('\n');
@@ -1148,7 +1156,7 @@ function renderTTStoHTML(text) {
 
 // ── App state ─────────────────────────────────────────────────────────────────
 let currentRoster   = null;
-let verbose         = false;
+let verbose         = true;
 let showRaw         = false;
 let currentFile     = null;
 let cardOrder       = [];  // array of {type: 'model'|'warbandRule'|'variant', index: number}
@@ -1221,9 +1229,8 @@ function renderRoster() {
     group.innerHTML = '<div class="section-label">Models · drag to reorder</div>';
     for (const ref of modelItems) {
       const model = currentRoster.models[ref.index];
-      const cost  = [model.ducats ? `${model.ducats}D` : '', model.glory ? `${model.glory}GP` : ''].filter(Boolean).join(' / ');
       const text  = formatModelCard(model, verbose);
-      group.appendChild(buildCardEl(ref, model.name, '⚔', text, cost));
+      group.appendChild(buildCardEl(ref, model.name, '⚔', text, null));
     }
     container.appendChild(group);
 
@@ -1370,7 +1377,10 @@ function exportForTTSMod() {
     const newlineIdx = cardText.indexOf('\n');
     const nameSection = newlineIdx === -1 ? cardText : cardText.substring(0, newlineIdx);
     const descSection = newlineIdx === -1 ? ''        : cardText.substring(newlineIdx + 1);
-    blocks.push(nameSection + '\n---\n' + descSection);
+    // Strip the duplicate header line from the description so the name doesn't appear twice
+    const descLines = descSection.split('\n');
+    const filteredDesc = descLines.filter(l => !l.includes('☩☩')).join('\n');
+    blocks.push(nameSection + '\n---\n' + filteredDesc);
   }
 
   // Two blank lines between units (\n\n\n = current line end + 2 blank lines)
@@ -1384,6 +1394,12 @@ function setVerbose(v) {
   verbose = v;
   document.getElementById('btn-compressed').classList.toggle('active', !v);
   document.getElementById('btn-verbose').classList.toggle('active', v);
+  const hint = document.getElementById('mode-hint-text');
+  if (hint) {
+    hint.innerHTML = v
+      ? '<span style="color:var(--gold); font-weight:600;">Verbose mode is on.</span> Cards show full ability text from the rulebook. If text overflows or doesn\'t fit on your TTS cards, switch to <strong style="color:var(--text);">Compressed</strong> \u2014 it shortens abilities to one-line summaries.'
+      : '<span style="color:var(--teal); font-weight:600;">Compressed mode is on.</span> Abilities are shortened to fit on TTS cards. Switch to <strong style="color:var(--text);">Verbose</strong> to see the full rulebook text.';
+  }
   refreshCards();
 }
 
