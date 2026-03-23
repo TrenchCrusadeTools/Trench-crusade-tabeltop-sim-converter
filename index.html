@@ -1399,13 +1399,16 @@ function exportForTTSMod() {
     }
     if (!cardText) continue;
 
-    const newlineIdx = cardText.indexOf('\n');
-    const nameSection = newlineIdx === -1 ? cardText : cardText.substring(0, newlineIdx);
-    const descSection = newlineIdx === -1 ? ''        : cardText.substring(newlineIdx + 1);
-    // Strip the duplicate header line from the description so the name doesn't appear twice
-    const descLines = descSection.split('\n');
-    const filteredDesc = descLines.filter(l => !l.includes('☩☩')).join('\n');
-    blocks.push(nameSection + '\n---\n' + filteredDesc);
+    // The TTS mod splits on --- : above is the card name, below is the description.
+    // Strip the ☩☩ header line from the card body so the name doesn't appear twice —
+    // the mod already uses the name section as the card title.
+    const lines = cardText.split('\n');
+    // First line is always the ☩☩ Name ☩☩ header — extract a clean name from it
+    const rawName = lines[0] || '';
+    const cleanName = rawName.replace(/\[[^\]]*\]/g, '').replace(/☩/g, '').trim();
+    // Description is everything after the header line
+    const descSection = lines.slice(1).join('\n');
+    blocks.push(cleanName + '\n---\n' + descSection);
   }
 
   // Two blank lines between units (\n\n\n = current line end + 2 blank lines)
