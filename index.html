@@ -1068,7 +1068,21 @@ function formatModelCard(model, verbose, faction) {
   if (model.abilities.length) {
     for (const ab of model.abilities) {
       const compressed = compressAbility(ab.name, ab.text, verbose);
-      const { color, icon } = abilityColor(ab.name);
+      const isSpell = /spell/i.test(ab.text || '') || /spell/i.test(ab.name || '');
+      let color, icon;
+      if (isSpell) {
+        const fLow = (faction || '').toLowerCase();
+        icon = '☽';
+        if (fLow.includes('seven') || fLow.includes('court')) {
+          color = C.RED;
+        } else if (fLow.includes('grail') || fLow.includes('hunger')) {
+          color = C.GREEN;
+        } else {
+          color = C.RED;
+        }
+      } else {
+        ({ color, icon } = abilityColor(ab.name));
+      }
       let line = `  ${color}${icon} ${ab.name}${C.RESET}`;
       if (compressed) line += `  ${C.SUP_O}${compressed}${C.SUP_C}`;
       lines.push(line);
