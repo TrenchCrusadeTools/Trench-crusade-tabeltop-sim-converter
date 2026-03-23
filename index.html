@@ -1022,7 +1022,7 @@ function weaponInline(w) {
   return parts.join(' ');
 }
 
-function formatModelCard(model, verbose) {
+function formatModelCard(model, verbose, faction) {
   const lines = [];
 
   // ── Name + cost line ──────────────────────────────────────────────────────
@@ -1043,8 +1043,19 @@ function formatModelCard(model, verbose) {
     for (const w of model.weapons) {
       const wRange = (w.range || '').toLowerCase().trim();
       const isRanged = wRange && wRange !== '-' && wRange !== 'melee';
+      const isSpell = /spell/i.test(w.keywords || '') || /spell/i.test(w.rules || '');
       let wColor, wIcon;
-      if (isRanged) {
+      if (isSpell) {
+        const fLow = (faction || '').toLowerCase();
+        wIcon = '☽';
+        if (fLow.includes('seven') || fLow.includes('court')) {
+          wColor = C.RED;
+        } else if (fLow.includes('grail') || fLow.includes('hunger')) {
+          wColor = C.GREEN;
+        } else {
+          wColor = C.RED; // fallback for unknown faction spells
+        }
+      } else if (isRanged) {
         wColor = C.PURPLE; wIcon = '⊕';
       } else {
         wColor = C.ORANGE; wIcon = '✢';
@@ -1111,7 +1122,7 @@ function buildCombinedOutput(roster, verbose) {
   if (roster.models.length) {
     blocks.push(`${C.HEADER}── MODELS ──${C.RESET}`);
     for (const model of roster.models) {
-      blocks.push(formatModelCard(model, verbose));
+      blocks.push(formatModelCard(model, verbose, roster.faction));
     }
   }
 
@@ -1229,7 +1240,7 @@ function renderRoster() {
     group.innerHTML = '<div class="section-label">Models · drag to reorder</div>';
     for (const ref of modelItems) {
       const model = currentRoster.models[ref.index];
-      const text  = formatModelCard(model, verbose);
+      const text  = formatModelCard(model, verbose, currentRoster.faction);
       group.appendChild(buildCardEl(ref, model.name, '⚔', text, null));
     }
     container.appendChild(group);
@@ -1340,7 +1351,7 @@ function copyAll() {
     blocks.push(`${C.HEADER}── MODELS ──${C.RESET}`);
     for (const ref of modelRefs) {
       const model = currentRoster.models[ref.index];
-      blocks.push(formatModelCard(model, verbose));
+      blocks.push(formatModelCard(model, verbose, currentRoster.faction));
     }
   }
 
@@ -1364,7 +1375,7 @@ function exportForTTSMod() {
   for (const ref of cardOrder) {
     let cardText = '';
     if (ref.type === 'model') {
-      cardText = formatModelCard(currentRoster.models[ref.index], verbose);
+      cardText = formatModelCard(currentRoster.models[ref.index], verbose, currentRoster.faction);
     } else if (ref.type === 'warbandRule') {
       const wr = currentRoster.warbandRules[ref.index];
       cardText = formatWarbandRuleCard(wr.selectionName, wr.rules, verbose);
@@ -1418,7 +1429,7 @@ function refreshCards() {
     const index = parseInt(el.dataset.index, 10);
     let text = '';
     if (type === 'model') {
-      text = formatModelCard(currentRoster.models[index], verbose);
+      text = formatModelCard(currentRoster.models[index], verbose, currentRoster.faction);
     } else if (type === 'warbandRule') {
       const wr = currentRoster.warbandRules[index];
       text = formatWarbandRuleCard(wr.selectionName, wr.rules, verbose);
