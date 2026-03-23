@@ -1023,10 +1023,11 @@ function weaponInline(w) {
 }
 
 function formatModelCard(model, verbose, faction) {
-  const lines = [];
+  const nameLines = [];
+  const descLines = [];
 
   // ── Name + cost line ──────────────────────────────────────────────────────
-  lines.push(`${C.HEADER}☩☩ ${model.name} ☩☩${C.RESET}`);
+  nameLines.push(`${C.HEADER}☩☩ ${model.name} ☩☩${C.RESET}`);
 
   // ── Stats line ───────────────────────────────────────────────────────────
   const s = model.stats;
@@ -1036,7 +1037,7 @@ function formatModelCard(model, verbose, faction) {
   if (s.Ranged)   statParts.push(`${C.PURPLE}⊕${C.RESET} ${s.Ranged}`);
   if (s.Armour)   statParts.push(`${C.GREY}❖${C.RESET} ${s.Armour}`);
   if (s.Base)     statParts.push(`${C.GREY}BASE${C.RESET} ${s.Base}`);
-  if (statParts.length) lines.push('  ' + statParts.join('  '));
+  if (statParts.length) nameLines.push('  ' + statParts.join('  '));
 
   // ── Weapons ───────────────────────────────────────────────────────────────
   if (model.weapons.length) {
@@ -1060,7 +1061,7 @@ function formatModelCard(model, verbose, faction) {
       } else {
         wColor = C.ORANGE; wIcon = '✢';
       }
-      lines.push(`  ${wColor}${wIcon} ${weaponInline(w)}${C.RESET}`);
+      nameLines.push(`  ${wColor}${wIcon} ${weaponInline(w)}${C.RESET}`);
     }
   }
 
@@ -1085,16 +1086,17 @@ function formatModelCard(model, verbose, faction) {
       }
       let line = `  ${color}${icon} ${ab.name}${C.RESET}`;
       if (compressed) line += `  ${C.SUP_O}${compressed}${C.SUP_C}`;
-      lines.push(line);
+      descLines.push(line);
     }
   }
 
   // ── Keywords ──────────────────────────────────────────────────────────────
   if (model.keywords.length) {
-    lines.push(`  ${C.GREY}${C.SUP_O}[${model.keywords.join(', ')}]${C.SUP_C}${C.RESET}`);
+    descLines.push(`  ${C.GREY}${C.SUP_O}[${model.keywords.join(', ')}]${C.SUP_C}${C.RESET}`);
   }
 
-  return lines.join('\n');
+  // Join with a hidden marker between name and desc sections so export can split them
+  return nameLines.join('\n') + '\n\x00' + descLines.join('\n');
 }
 
 function formatWarbandRuleCard(selName, rules, verbose) {
@@ -1157,9 +1159,11 @@ const COLOR_MAP = {
   'eb3b5a': 'c-red',
 };
 
+function stripMarker(text) { return text.replace(/\x00/g, ''); }
+
 function renderTTStoHTML(text) {
   // Escape HTML
-  let html = text
+  let html = stripMarker(text)
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
@@ -1297,12 +1301,12 @@ function buildCardEl(ref, title, icon, cardText, costStr) {
       <span class="card-title">${escHtml(title)}</span>
       ${costStr ? `<span class="card-cost">${escHtml(costStr)}</span>` : ''}
       <button class="card-copy-btn" onclick="copyCard(this, event)"
-              data-text="${escAttr(cardText)}">⎘ Copy</button>
+              data-text="${escAttr(stripMarker(cardText))}">⎘ Copy</button>
       <button class="card-expand-btn">▸</button>
     </div>
     <div class="card-body">
       <div class="tts-preview">${renderTTStoHTML(cardText)}</div>
-      <div class="raw-output ${showRaw ? 'open' : ''}">${escHtml(cardText)}</div>
+      <div class="raw-output ${showRaw ? 'open' : ''}">${escHtml(stripMarker(cardText))}</div>
     </div>
   `;
   return el;
@@ -1369,7 +1373,7 @@ function copyAll() {
     }
   }
 
-  const full = blocks.join('\n\n');
+  const full = stripMarker(blocks.join('\n\n'));
   navigator.clipboard.writeText(full).then(() => {
     showToast('Entire warband copied to clipboard!');
   });
@@ -1399,16 +1403,18 @@ function exportForTTSMod() {
     }
     if (!cardText) continue;
 
-    // The TTS mod splits on --- : above is the card name, below is the description.
-    // Strip the ☩☩ header line from the card body so the name doesn't appear twice —
-    // the mod already uses the name section as the card title.
-    const lines = cardText.split('\n');
-    // First line is always the ☩☩ Name ☩☩ header — extract a clean name from it
-    const rawName = lines[0] || '';
-    const cleanName = rawName.replace(/\[[^\]]*\]/g, '').replace(/☩/g, '').trim();
-    // Description is everything after the header line
-    const descSection = lines.slice(1).join('\n');
-    blocks.push(cleanName + '\n---\n' + descSection);
+    // Model cards embed a \x00 marker between name section (header+stats+weapons)
+    // and desc section (abilities+keywords). Use that for the --- split.
+    // Warband rule cards don't have the marker, so fall back to first-line split.
+    if (cardText.includes('\x00')) {
+      const [nameSection, descSection] = cardText.split('\x00');
+      blocks.push(nameSection + '\n---\n' + descSection);
+    } else {
+      const newlineIdx = cardText.indexOf('\n');
+      const nameSection = newlineIdx === -1 ? cardText : cardText.substring(0, newlineIdx);
+      const descSection = newlineIdx === -1 ? '' : cardText.substring(newlineIdx + 1);
+      blocks.push(nameSection + '\n---\n' + descSection);
+    }
   }
 
   // Two blank lines between units (\n\n\n = current line end + 2 blank lines)
@@ -1458,8 +1464,8 @@ function refreshCards() {
     const raw     = el.querySelector('.raw-output');
     const copyBtn = el.querySelector('.card-copy-btn');
     if (preview) preview.innerHTML = renderTTStoHTML(text);
-    if (raw)     raw.textContent   = text;
-    if (copyBtn) copyBtn.dataset.text = text;
+    if (raw)     raw.textContent   = stripMarker(text);
+    if (copyBtn) copyBtn.dataset.text = stripMarker(text);
   });
 }
 
